@@ -1,0 +1,7 @@
+# 测试数据是从真实课程库里导出来的，含同学真实姓名和课程内容。
+# 这是公开仓库，绝不能进去。
+test-fixture.json
+*-fixture.json
+ed-*.json
+
+.DS_Store

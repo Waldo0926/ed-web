@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ed 课程论坛整理</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Ed 课程论坛整理</h1>
+  <div class="sub">
+    把你的 Ed 帖子抓下来、按分类整理、每条给一句话结论。
+    全程在你自己的浏览器里跑 —— token 和数据都不会离开这台机器。
+  </div>
+
+  <!-- ===== 第一步：token ===== -->
+  <section class="panel" id="p-auth">
+    <h2>第一步：让页面能读你的 Ed</h2>
+    <p class="note">
+      Ed 没有对第三方开放的登录授权，所以需要你把自己的登录凭据（token）交给
+      <b>这个页面</b>。它只存在你浏览器的 sessionStorage 里，关掉标签页就没了，
+      不会发给任何服务器 —— 这个页面的源码是公开的，可以自己核对。
+    </p>
+
+    <ol class="steps">
+      <li>在浏览器里打开任意一个 Ed 页面（<a href="https://edstem.org/au/dashboard" target="_blank" rel="noopener">edstem.org</a>），确认是登录状态</li>
+      <li>按 <code>⌥⌘J</code>（Mac）或 <code>Ctrl+Shift+J</code>（Windows）打开控制台</li>
+      <li>粘贴下面这行并回车。Chrome 第一次会拦你，按它的提示先手打 <code>allow pasting</code> 再粘贴：
+        <pre class="snip" id="snippet">copy(localStorage.authToken)</pre>
+      </li>
+      <li>token 已经在你剪贴板里了，粘到下面这个框：</li>
+    </ol>
+
+    <label for="tok">Ed token（一长串 eyJ… 开头的字符）</label>
+    <textarea id="tok" spellcheck="false" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"></textarea>
+
+    <div class="row">
+      <button class="primary" id="go">连接</button>
+      <button id="loadfile">载入之前导出的 JSON</button>
+      <input type="file" id="file" accept="application/json" style="display:none">
+    </div>
+    <div class="note warn">
+      这张 token 等价于你的 Ed 账号完整权限（能替你发帖、删帖、看私密帖），
+      有效期约 14 天。别把它发给别人，也别贴到你不信任的网站上。
+    </div>
+    <div class="err" id="autherr"></div>
+  </section>
+
+  <!-- ===== 第二步：选课 ===== -->
+  <section class="panel hide" id="p-pick">
+    <h2>第二步：选要抓哪几门</h2>
+    <div class="note" id="who"></div>
+    <div class="courses" id="courses"></div>
+    <div class="row">
+      <button class="primary" id="crawl">开始抓取</button>
+      <button id="selall">全选</button>
+      <button id="selactive">只选在读的</button>
+      <button id="back">换个 token</button>
+    </div>
+    <progress id="prog" class="hidden" max="100" value="0"></progress>
+    <div class="note" id="progtext"></div>
+    <div class="err" id="crawlerr"></div>
+  </section>
+
+  <!-- ===== 第三步：看 ===== -->
+  <section class="hide" id="p-view">
+    <div class="tabs" id="tabs"></div>
+    <div class="bar">
+      <input id="q" placeholder="搜索标题 / 正文 / 回复…">
+      <button class="btn" data-f="new">近 48 小时</button>
+      <button class="btn" data-f="unanswered">未解答</button>
+      <button class="btn" data-f="alert">有提醒</button>
+      <button class="btn" data-f="staff">老师已答</button>
+      <button class="btn" id="expand">展开全部</button>
+      <button class="btn" id="export">导出 JSON</button>
+      <button class="btn" id="restart">重新抓</button>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <footer>
+    源码：<a href="https://github.com/Waldo0926/ed-web" target="_blank" rel="noopener">github.com/Waldo0926/ed-web</a>
+    · 这是一个个人小工具，跟 Ed 和 Monash 都没有关系。
+    抓下来的内容里有同学的真实姓名，请不要外传。
+  </footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
