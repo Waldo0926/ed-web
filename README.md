@@ -1,4 +1,4 @@
-# ed-web
+# Ed Web — Private, Client-Side Ed Discussion Reader
 
 [![Live App](https://img.shields.io/badge/live-app-1e5eff?style=for-the-badge)](https://monashed.secureview.tech/app/)
 [![Privacy](https://img.shields.io/badge/privacy-client--side%20only-2ea44f?style=for-the-badge)]()
@@ -6,19 +6,19 @@
 
 **English** · [中文](README.zh-CN.md)
 
-Fetch, organise, and summarise Ed Discussion course forums, entirely **in your own browser**.
+A privacy-first, client-side web app for fetching, organising, searching, and summarising Ed Discussion course forums directly in your browser.
 
 Live: https://monashed.secureview.tech/app/
 
-## What it never touches
+## Privacy model
 
-This page is **fully static**, with no backend. Specifically:
+This page is **fully static**, with no application backend. Specifically:
 
-- Your Ed token **only ever lives in your own browser** (`sessionStorage`, gone the moment you close the tab). It is never sent to `monashed.secureview.tech` or any other server.
-- Fetched posts are stored in your browser's **IndexedDB**, also never uploaded.
-- The page calls `edstem.org/api/*` directly from your browser. Ed's API returns `Access-Control-Allow-Origin: *`, so this works with no proxy in between.
+- Your Ed token is stored only in your browser (`sessionStorage`, cleared when the tab is closed) and is sent only **directly to Ed's official `edstem.org` API** for authentication. It is never sent to `monashed.secureview.tech` or any third-party backend.
+- Fetched posts are stored in your browser's **IndexedDB** and are not uploaded to this site.
+- The page calls `edstem.org/api/*` directly from your browser. Ed's API returns `Access-Control-Allow-Origin: *`, so no proxy is required.
 
-This repository is public specifically so you can verify the above yourself — a full-text search for `fetch(` turns up exactly two destinations: `edstem.org` and relative paths.
+This repository is public specifically so you can verify the data flow yourself — a full-text search for `fetch(` shows only Ed's API and relative application paths as destinations.
 
 ## How to use it
 
