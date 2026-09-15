@@ -38,6 +38,14 @@ No LLM, pure rule-based logic:
 
 Quality is obviously lower than an AI-written summary, but for the vast majority of posts where "the staff reply was just 'Sure' or 'Up to you'", it's enough to judge whether to open the thread.
 
+## Public showcase vs. private companion
+
+`ed-web` is also the **public, privacy-safe showcase** of a larger private companion project used for my own study workflow.
+
+The private companion adds engineering components that should not be published with real course data: incremental API synchronisation, SQLite persistence, scheduled jobs, static dashboard generation, and manually triggered AI curation. The public repository deliberately excludes production credentials, server addresses, deployment paths, raw forum content, private posts, student information, meeting passwords, attendance codes, tokens, and generated databases.
+
+For a sanitised overview of that architecture and the design decisions behind it, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
 ## Related
 
-The fetching logic shares its origin with the local version (`ed-digest`, private). The local version adds AI summaries generated via `claude -p` and a daily scheduled job.
+The fetching logic shares its origin with the private local companion. `ed-web` keeps the useful user-facing workflow while replacing server-side persistence and automation with browser-local storage and rule-based summaries, making the public version independently usable and auditable without exposing private course data or infrastructure.
