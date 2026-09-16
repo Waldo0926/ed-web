@@ -187,12 +187,36 @@ async function fetchCourse(cid, token, onTick) {
 
 /* ------------------------------------------------------- 抓取：课程内容（Lessons） */
 
+/* 列表接口不带文件，slide 的 file_url / webpage 的 url 要进详情接口才有 */
+async function fetchLessonFiles(lessonId, token) {
+  try {
+    const d = await edGet(`/lessons/${lessonId}`, token);
+    const slides = ((d.lesson || {}).slides || []).filter((s) => !s.is_hidden);
+    return slides
+      .filter((s) => (s.type === 'pdf' && s.file_url) || (s.type === 'webpage' && s.url))
+      .map((s) => ({ id: s.id, type: s.type, title: s.title || '', file_url: s.file_url || null, url: s.url || null }));
+  } catch (e) {
+    if (e.auth) throw e;
+    console.warn('lesson 文件抓取失败', lessonId, e);
+    return [];
+  }
+}
+
 async function fetchLessons(cid, token) {
   const d = await edGet(`/courses/${cid}/lessons`, token);
   const modules = (d.modules || []).slice().sort((a, b) => a.id - b.id);
   const lessons = (d.lessons || [])
     .filter((l) => !l.is_hidden)
     .sort((a, b) => (a.index ?? -1) - (b.index ?? -1));
+
+  let idx = 0;
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (idx < lessons.length) {
+      const l = lessons[idx++];
+      l.files = await fetchLessonFiles(l.id, token);
+    }
+  }));
+
   return { modules, lessons };
 }
 
@@ -310,22 +334,40 @@ function decorateLesson(l) {
   return l;
 }
 
+const FTYPE_LABEL = { pdf: 'PDF', webpage: '链接' };
+
+function fileRowHTML(s) {
+  const href = s.type === 'pdf' ? s.file_url : s.url;
+  return `<div class="lfile"><span class="ftype">${esc(FTYPE_LABEL[s.type] || s.type)}</span>
+    <a href="${esc(href)}" target="_blank" rel="noopener">${esc(s.title || href)}</a></div>`;
+}
+
 function lessonCardHTML(l) {
-  const flags = [l.status, l._overdue && 'overdue', l._dueSoon && 'duesoon'].filter(Boolean).join(' ');
+  const files = l.files || [];
+  const flags = [l.status, l._overdue && 'overdue', l._dueSoon && 'duesoon',
+                 files.length && 'hasfiles'].filter(Boolean).join(' ');
   const chips = [];
   if (l._overdue) chips.push('<span class="chip warn">已截止</span>');
   else if (l._dueSoon) chips.push('<span class="chip warn">临近截止</span>');
   if (l.is_timed) chips.push(`<span class="chip">限时 ${l.timer_duration} 分</span>`);
+  if (files.length) chips.push(`<span class="chip">📎 ${files.length}</span>`);
   const due = l._due ? ' · 截止 ' + fmt(l._due.toISOString()) : '';
+  const dataText = esc((l.title || '').toLowerCase());
 
-  return `<div class="lesson" data-flags="${flags}" data-text="${esc((l.title || '').toLowerCase())}">
-    <span class="lstatus ${l.status}" title="${esc(LSTATUS_LABEL[l.status] || l.status)}">${
+  const row = `<span class="lstatus ${l.status}" title="${esc(LSTATUS_LABEL[l.status] || l.status)}">${
       LSTATUS_ICON[l.status] || '○'}</span>
     <a class="ltitle" href="https://edstem.org/au/courses/${l.course_id}/lessons/${l.id}"
        target="_blank" rel="noopener">${esc(l.title || '(无标题)')}</a>
     ${chips.join('')}
-    <span class="meta">${l.slide_count ?? 0} 页${due}</span>
-  </div>`;
+    <span class="meta">${l.slide_count ?? 0} 页${due}</span>`;
+
+  if (!files.length) {
+    return `<div class="lesson" data-flags="${flags}" data-text="${dataText}">${row}</div>`;
+  }
+  return `<details class="lesson" data-flags="${flags}" data-text="${dataText}">
+    <summary>${row}</summary>
+    <div class="lfiles">${files.map(fileRowHTML).join('')}</div>
+  </details>`;
 }
 
 function renderLessons() {
