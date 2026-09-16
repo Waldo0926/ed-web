@@ -12,7 +12,7 @@
 
   <h1>Ed 课程论坛整理</h1>
   <div class="sub">
-    把你的 Ed 帖子抓下来、按分类整理、每条给一句话结论。
+    把你的 Ed 帖子和课程内容抓下来、按分类整理、每条给一句话结论。
     全程在你自己的浏览器里跑 —— token 和数据都不会离开这台机器。
   </div>
 
@@ -68,13 +68,26 @@
   <!-- ===== 第三步：看 ===== -->
   <section class="hide" id="p-view">
     <div class="tabs" id="tabs"></div>
+
+    <div class="seg" id="viewseg">
+      <button data-v="threads" class="on">帖子</button>
+      <button data-v="lessons">课程内容</button>
+    </div>
+
     <div class="bar">
-      <input id="q" placeholder="搜索标题 / 正文 / 回复…">
-      <button class="btn" data-f="new">近 48 小时</button>
-      <button class="btn" data-f="unanswered">未解答</button>
-      <button class="btn" data-f="alert">有提醒</button>
-      <button class="btn" data-f="staff">老师已答</button>
-      <button class="btn" id="expand">展开全部</button>
+      <input id="q" placeholder="搜索…">
+      <span id="filters-threads">
+        <button class="btn" data-f="new">近 48 小时</button>
+        <button class="btn" data-f="unanswered">未解答</button>
+        <button class="btn" data-f="alert">有提醒</button>
+        <button class="btn" data-f="staff">老师已答</button>
+        <button class="btn" id="expand">展开全部</button>
+      </span>
+      <span id="filters-lessons" class="hide">
+        <button class="btn" data-lf="unattempted">未开始</button>
+        <button class="btn" data-lf="duesoon">临近截止</button>
+        <button class="btn" data-lf="overdue">已截止</button>
+      </span>
       <button class="btn" id="export">导出 JSON</button>
       <button class="btn" id="restart">重新抓</button>
     </div>
