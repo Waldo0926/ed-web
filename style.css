@@ -82,11 +82,20 @@ summary::-webkit-details-marker{display:none}
 .rmeta{color:var(--dim);font-size:12px;margin-bottom:2px}
 .lesson{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
      border-radius:10px;margin:6px 0;padding:10px 14px;flex-wrap:wrap}
+details.lesson{display:block;padding:0}
+details.lesson[open]{border-color:var(--accent)}
+details.lesson summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;
+     flex-wrap:wrap;padding:10px 14px}
+details.lesson summary::-webkit-details-marker{display:none}
 .lstatus{width:18px;text-align:center;font-size:14px;color:var(--dim);flex:none}
 .lstatus.completed{color:var(--ok)}
 .lstatus.attempted{color:var(--accent)}
 .ltitle{font-weight:600;color:var(--ink);text-decoration:none}
 .ltitle:hover{text-decoration:underline}
+.lfiles{padding:0 14px 12px 42px;display:flex;flex-direction:column;gap:7px;
+     border-top:1px dashed var(--line);margin-top:2px;padding-top:10px}
+.lfile{font-size:13.5px;display:flex;align-items:center;gap:8px}
+.ftype{font-size:10.5px;padding:1px 7px;border-radius:99px;background:var(--chip);color:var(--dim);flex:none}
 .hidden{display:none}
 .empty{color:var(--dim);padding:36px 0;text-align:center}
 footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);
