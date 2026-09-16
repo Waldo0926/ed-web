@@ -13,7 +13,8 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
   (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-let STATE = { user: null, courses: [], data: [], active: null, filters: new Set() };
+let STATE = { user: null, courses: [], data: [], active: null, view: 'threads',
+              filters: new Set(), lessonFilters: new Set() };
 
 /* ---------------------------------------------------------------- Ed API */
 
@@ -133,7 +134,7 @@ function gistOf(t) {
   return { label: '', text: firstSentences(t.body, 2, 170) || '（无正文）' };
 }
 
-/* ---------------------------------------------------------------- 抓取 */
+/* ---------------------------------------------------------------- 抓取：帖子 */
 
 async function fetchCourse(cid, token, onTick) {
   const seen = new Set();
@@ -184,6 +185,17 @@ async function fetchCourse(cid, token, onTick) {
   return out;
 }
 
+/* ------------------------------------------------------- 抓取：课程内容（Lessons） */
+
+async function fetchLessons(cid, token) {
+  const d = await edGet(`/courses/${cid}/lessons`, token);
+  const modules = (d.modules || []).slice().sort((a, b) => a.id - b.id);
+  const lessons = (d.lessons || [])
+    .filter((l) => !l.is_hidden)
+    .sort((a, b) => (a.index ?? -1) - (b.index ?? -1));
+  return { modules, lessons };
+}
+
 /* ------------------------------------------------------------ IndexedDB */
 
 function idb() {
@@ -218,7 +230,7 @@ async function loadDump() {
   } catch { return null; }
 }
 
-/* ---------------------------------------------------------------- 渲染 */
+/* ---------------------------------------------------------------- 渲染：帖子 */
 
 const fmt = (iso) => {
   if (!iso) return '—';
@@ -266,15 +278,6 @@ function cardHTML(t) {
     <div class="body">${esc(t.body || '（无正文）')}</div>${replies}</details>`;
 }
 
-function renderTabs() {
-  $('tabs').innerHTML = STATE.data.map((c) =>
-    `<button data-cid="${c.id}" class="${c.id === STATE.active ? 'on' : ''}">${
-      esc((c.code || '').split(' ')[0])} <span class="meta">${c.threads.length}</span></button>`).join('');
-  for (const b of $('tabs').children) {
-    b.onclick = () => { STATE.active = Number(b.dataset.cid); renderTabs(); renderList(); };
-  }
-}
-
 function renderList() {
   const course = STATE.data.find((c) => c.id === STATE.active);
   if (!course) return;
@@ -292,18 +295,103 @@ function renderList() {
   applyFilters();
 }
 
+/* -------------------------------------------------------- 渲染：课程内容 */
+
+const LSTATUS_ICON = { completed: '✓', attempted: '●', unattempted: '○' };
+const LSTATUS_LABEL = { completed: '已完成', attempted: '进行中', unattempted: '未开始' };
+
+/* Ed 没直接给"临近截止"这种结论，这里只根据 due_at 算，跟帖子那边的规则式标签是一个思路 */
+function decorateLesson(l) {
+  const dueRaw = l.effective_due_at || l.due_at;
+  const due = dueRaw ? new Date(dueRaw) : null;
+  l._due = due && !isNaN(due) ? due : null;
+  l._overdue = !!l._due && l._due.getTime() < Date.now() && l.status !== 'completed';
+  l._dueSoon = !!l._due && !l._overdue && (l._due.getTime() - Date.now()) < 7 * 24 * 3600 * 1000;
+  return l;
+}
+
+function lessonCardHTML(l) {
+  const flags = [l.status, l._overdue && 'overdue', l._dueSoon && 'duesoon'].filter(Boolean).join(' ');
+  const chips = [];
+  if (l._overdue) chips.push('<span class="chip warn">已截止</span>');
+  else if (l._dueSoon) chips.push('<span class="chip warn">临近截止</span>');
+  if (l.is_timed) chips.push(`<span class="chip">限时 ${l.timer_duration} 分</span>`);
+  const due = l._due ? ' · 截止 ' + fmt(l._due.toISOString()) : '';
+
+  return `<div class="lesson" data-flags="${flags}" data-text="${esc((l.title || '').toLowerCase())}">
+    <span class="lstatus ${l.status}" title="${esc(LSTATUS_LABEL[l.status] || l.status)}">${
+      LSTATUS_ICON[l.status] || '○'}</span>
+    <a class="ltitle" href="https://edstem.org/au/courses/${l.course_id}/lessons/${l.id}"
+       target="_blank" rel="noopener">${esc(l.title || '(无标题)')}</a>
+    ${chips.join('')}
+    <span class="meta">${l.slide_count ?? 0} 页${due}</span>
+  </div>`;
+}
+
+function renderLessons() {
+  const course = STATE.data.find((c) => c.id === STATE.active);
+  if (!course) return;
+  const byMod = {};
+  for (const l of course.lessons || []) (byMod[l.module_id] ||= []).push(l);
+  const mods = (course.modules || []).filter((m) => byMod[m.id] && byMod[m.id].length);
+  const total = (course.lessons || []).length;
+  const done = (course.lessons || []).filter((l) => l.status === 'completed').length;
+
+  $('list').innerHTML =
+    `<div class="sub">${esc(course.name || '')} · ${total} 项课程内容 · ${done} 已完成</div>` +
+    (mods.length
+      ? mods.map((m) => `<h3 class="cat">${esc(m.name)}</h3>` +
+          byMod[m.id].map(lessonCardHTML).join('')).join('')
+      : '<div class="empty">这门课没有课程内容，或者这门课没开 Lessons 功能</div>');
+  applyFilters();
+}
+
+function renderContent() {
+  if (STATE.view === 'lessons') renderLessons(); else renderList();
+}
+
+function renderTabs() {
+  $('tabs').innerHTML = STATE.data.map((c) =>
+    `<button data-cid="${c.id}" class="${c.id === STATE.active ? 'on' : ''}">${
+      esc((c.code || '').split(' ')[0])} <span class="meta">${c.threads.length}</span></button>`).join('');
+  for (const b of $('tabs').children) {
+    b.onclick = () => { STATE.active = Number(b.dataset.cid); renderTabs(); renderContent(); };
+  }
+}
+
+function switchView(v) {
+  STATE.view = v;
+  for (const b of $('viewseg').children) b.classList.toggle('on', b.dataset.v === v);
+  $('filters-threads').classList.toggle('hide', v !== 'threads');
+  $('filters-lessons').classList.toggle('hide', v !== 'lessons');
+  $('q').value = '';
+  renderContent();
+}
+
 function applyFilters() {
   const q = $('q').value.trim().toLowerCase();
-  for (const c of document.querySelectorAll('details.t')) {
-    const f = c.dataset.flags.split(' ');
-    const okText = !q || c.dataset.text.includes(q) ||
-      c.querySelector('.title').textContent.toLowerCase().includes(q);
-    const okFlag = [...STATE.filters].every((x) => f.includes(x));
-    c.classList.toggle('hidden', !(okText && okFlag));
+  if (STATE.view === 'threads') {
+    for (const c of document.querySelectorAll('details.t')) {
+      const f = c.dataset.flags.split(' ');
+      const okText = !q || c.dataset.text.includes(q) ||
+        c.querySelector('.title').textContent.toLowerCase().includes(q);
+      const okFlag = [...STATE.filters].every((x) => f.includes(x));
+      c.classList.toggle('hidden', !(okText && okFlag));
+    }
+  } else {
+    for (const c of document.querySelectorAll('.lesson')) {
+      const f = c.dataset.flags.split(' ');
+      const okText = !q || c.dataset.text.includes(q);
+      const okFlag = [...STATE.lessonFilters].every((x) => f.includes(x));
+      c.classList.toggle('hidden', !(okText && okFlag));
+    }
   }
   for (const h of document.querySelectorAll('h3.cat')) {
     let n = h.nextElementSibling, any = false;
-    while (n && n.tagName === 'DETAILS') { if (!n.classList.contains('hidden')) any = true; n = n.nextElementSibling; }
+    while (n && (n.tagName === 'DETAILS' || n.classList.contains('lesson'))) {
+      if (!n.classList.contains('hidden')) any = true;
+      n = n.nextElementSibling;
+    }
     h.classList.toggle('hidden', !any);
   }
 }
@@ -366,7 +454,19 @@ async function crawl() {
           `[${i + 1}/${picked.length}] ${c.code} — ${done}/${total} 帖`;
         $('prog').value = total ? ((i + done / total) / picked.length) * 100 : 0;
       });
-      data.push({ ...c, threads: threads.map(decorate) });
+      let modules = [], lessons = [];
+      try {
+        ({ modules, lessons } = await fetchLessons(picked[i], token));
+      } catch (e) {
+        if (e.auth) throw e;
+        console.warn('课程内容抓取失败（这门课可能没开 Lessons）', picked[i], e);
+      }
+      data.push({
+        ...c,
+        threads: threads.map(decorate),
+        modules,
+        lessons: lessons.map(decorateLesson),
+      });
     }
   } catch (e) {
     $('crawlerr').textContent = e.auth
@@ -384,7 +484,7 @@ async function crawl() {
   $('progtext').textContent = '';
   show('p-view');
   renderTabs();
-  renderList();
+  renderContent();
 }
 
 function exportJSON() {
@@ -400,11 +500,16 @@ function exportJSON() {
 
 function adoptDump(d) {
   if (!d || !Array.isArray(d.data) || !d.data.length) return false;
-  STATE.data = d.data.map((c) => ({ ...c, threads: (c.threads || []).map(decorate) }));
+  STATE.data = d.data.map((c) => ({
+    ...c,
+    threads: (c.threads || []).map(decorate),
+    modules: c.modules || [],
+    lessons: (c.lessons || []).map(decorateLesson),
+  }));
   STATE.active = STATE.data[0].id;
   show('p-view');
   renderTabs();
-  renderList();
+  renderContent();
   return true;
 }
 
@@ -434,11 +539,21 @@ $('file').onchange = async (e) => {
   }
 };
 
+for (const b of $('viewseg').children) b.onclick = () => switchView(b.dataset.v);
+
 $('q').addEventListener('input', applyFilters);
 document.querySelectorAll('.btn[data-f]').forEach((b) => {
   b.onclick = () => {
     const k = b.dataset.f;
     STATE.filters.has(k) ? STATE.filters.delete(k) : STATE.filters.add(k);
+    b.classList.toggle('on');
+    applyFilters();
+  };
+});
+document.querySelectorAll('.btn[data-lf]').forEach((b) => {
+  b.onclick = () => {
+    const k = b.dataset.lf;
+    STATE.lessonFilters.has(k) ? STATE.lessonFilters.delete(k) : STATE.lessonFilters.add(k);
     b.classList.toggle('on');
     applyFilters();
   };
