@@ -1,8 +1,8 @@
 # Ed Web — Private, Client-Side Ed Discussion Reader
 
 [![Live App](https://img.shields.io/badge/live-app-1e5eff?style=for-the-badge)](https://monashed.secureview.tech/app/)
-[![Privacy](https://img.shields.io/badge/privacy-client--side%20only-2ea44f?style=for-the-badge)]()
-[![Backend](https://img.shields.io/badge/backend-none-black?style=for-the-badge)]()
+[![Privacy](https://img.shields.io/badge/privacy-client--side%20only-2ea44f?style=for-the-badge)](#privacy-model)
+[![Backend](https://img.shields.io/badge/backend-none-black?style=for-the-badge)](#public-showcase-vs-private-companion)
 
 **English** · [中文](README.zh-CN.md)
 
