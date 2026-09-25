@@ -157,7 +157,9 @@ async function fetchCourse(cid, token, onTick) {
     while (idx < list.length) {
       const th = list[idx++];
       try {
-        const full = await edGet(`/threads/${th.id}?view=1`, token);
+        // 别带 ?view=1：它会把帖子算作"你看过了"并把 updated_at 顶成现在，
+        // 抓一次就等于把所有帖子在 Ed 里标成已读。不带它返回的正文、回复、users 完全一样。
+        const full = await edGet(`/threads/${th.id}`, token);
         const tu = Object.assign({}, users, usersIndex(full.users));
         const f = full.thread || th;
         out.push({
@@ -374,8 +376,13 @@ function renderLessons() {
   const course = STATE.data.find((c) => c.id === STATE.active);
   if (!course) return;
   const byMod = {};
-  for (const l of course.lessons || []) (byMod[l.module_id] ||= []).push(l);
-  const mods = (course.modules || []).filter((m) => byMod[m.id] && byMod[m.id].length);
+  for (const l of course.lessons || []) (byMod[l.module_id ?? 'none'] ||= []).push(l);
+  // 不属于任何模块（或模块被隐藏）的内容放到最后的"未分类"，不然只算进总数、页面上却找不到
+  const known = new Set((course.modules || []).map((m) => String(m.id)));
+  const orphans = Object.keys(byMod).filter((k) => !known.has(k)).flatMap((k) => byMod[k]);
+  const mods = (course.modules || []).filter((m) => byMod[m.id] && byMod[m.id].length)
+    .map((m) => ({ name: m.name, items: byMod[m.id] }));
+  if (orphans.length) mods.push({ name: '未分类', items: orphans });
   const total = (course.lessons || []).length;
   const done = (course.lessons || []).filter((l) => l.status === 'completed').length;
 
@@ -383,7 +390,7 @@ function renderLessons() {
     `<div class="sub">${esc(course.name || '')} · ${total} 项课程内容 · ${done} 已完成</div>` +
     (mods.length
       ? mods.map((m) => `<h3 class="cat">${esc(m.name)}</h3>` +
-          byMod[m.id].map(lessonCardHTML).join('')).join('')
+          m.items.map(lessonCardHTML).join('')).join('')
       : '<div class="empty">这门课没有课程内容，或者这门课没开 Lessons 功能</div>');
   applyFilters();
 }
@@ -515,6 +522,7 @@ async function crawl() {
       ? 'token 在抓取途中失效了。回上一步换一张新的。'
       : '抓取出错：' + e.message;
     $('crawl').disabled = false;
+    $('prog').classList.add('hidden');
     return;
   }
 
@@ -561,7 +569,8 @@ $('go').onclick = connect;
 $('tok').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.metaKey) connect(); });
 $('crawl').onclick = crawl;
 $('back').onclick = () => show('p-auth');
-$('restart').onclick = () => show('p-pick');
+// 从本地记录/导入文件恢复的页面还没连过 Ed，选课列表是空的，得先回第一步（token 可能还在框里）
+$('restart').onclick = () => show(STATE.courses.length ? 'p-pick' : 'p-auth');
 $('export').onclick = exportJSON;
 $('selall').onclick = () =>
   document.querySelectorAll('#courses input').forEach((i) => { i.checked = true; });
