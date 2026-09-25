@@ -18,7 +18,7 @@ This page is **fully static**, with no application backend. Specifically:
 - Fetched posts are stored in your browser's **IndexedDB** and are not uploaded to this site.
 - The page calls `edstem.org/api/*` directly from your browser. Ed's API returns `Access-Control-Allow-Origin: *`, so no proxy is required.
 
-This repository is public specifically so you can verify the data flow yourself — a full-text search for `fetch(` shows only Ed's API and relative application paths as destinations.
+This repository is public specifically so you can verify the data flow yourself — a full-text search for `fetch(` shows only Ed's API, Ed's course files (`static.edusercontent.com`, fetched without the token when you download materials) and relative application paths as destinations.
 
 ## How to use it
 
@@ -26,6 +26,7 @@ This repository is public specifically so you can verify the data flow yourself 
 2. Enter your Ed token as the page prompts (two methods, both documented on the page)
 3. Select the units you want to fetch, then click "Start fetching"
 4. Once fetched, search, browse by category, and read a one-line takeaway for each post
+5. Under Lessons, click 一键下载资料 to get one zip of the unit's PDFs and links, organised into week folders and named after the titles on the page. It is built entirely in your browser
 
 ## How the summaries are made
 

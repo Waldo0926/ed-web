@@ -20,3 +20,5 @@ jobs:
       # 没有构建步骤、没有依赖：app.js 就是浏览器直接加载的那个文件
       - name: Syntax
         run: node --check app.js
+      - name: Tests
+        run: node --test tests/*.test.mjs
