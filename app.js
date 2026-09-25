@@ -1,6 +1,7 @@
 /* Ed 课程论坛整理 —— 纯前端。
  *
- * 这个文件里 fetch 的去处只有两个：edstem.org 的 API，以及本页面的相对路径。
+ * 这个文件里 fetch 的去处只有三个：edstem.org 的 API、Ed 的课程文件
+ * （static.edusercontent.com，一键下载时拉 PDF 用，不带 token），以及本页面的相对路径。
  * token 存 sessionStorage，抓下来的数据存 IndexedDB，都不上传。
  */
 'use strict';
@@ -222,6 +223,154 @@ async function fetchLessons(cid, token) {
   return { modules, lessons };
 }
 
+/* ------------------------------------------------------------ 一键下载资料 */
+
+/* 在浏览器里把一门课的 PDF 拉下来打成 zip，解压后是
+ *   FIT2109/Week 1 - Introduction to the Shell/16 workshop 1 slides.pdf
+ * 外部链接生成一个 .html 快捷方式，双击用浏览器打开。命名规则跟 ed-digest 的课程资料页一致。
+ * Ed 的文件域名返回 Access-Control-Allow-Origin: *，所以不需要任何代理。 */
+
+const cleanName = (name) => {
+  const s = String(name || '').replace(/: /g, ' - ').replace(/[\\/:]/g, '-')
+    .replace(/[*?"<>|]+/g, '').replace(/\s+/g, ' ').replace(/^[ .]+|[ .]+$/g, '');
+  return s || '资料';
+};
+
+/* 返回 [{ path, url } | { path, text }]，顺序就是"课程内容"页的顺序 */
+function courseZipEntries(course) {
+  const root = cleanName((course.code || '').split(' ')[0] || String(course.id));
+  const modName = {};
+  for (const m of course.modules || []) modName[m.id] = m.name;
+  const groups = {}, order = [];
+  for (const m of course.modules || []) { groups[m.id] = []; order.push(m.id); }
+  for (const l of course.lessons || []) {
+    const k = l.module_id != null && l.module_id in groups ? l.module_id : 'none';
+    if (!groups[k]) { groups[k] = []; order.push(k); }
+    groups[k].push(l);
+  }
+  const out = [];
+  for (const k of order) {
+    const week = cleanName(k === 'none' ? '未分类' : modName[k]);
+    let n = 0;
+    for (const l of groups[k]) {
+      for (const f of l.files || []) {
+        const stem = `${String(++n).padStart(2, '0')} ${cleanName(f.title || l.title)}`.slice(0, 150);
+        if (f.type === 'pdf' && f.file_url) out.push({ path: `${root}/${week}/${stem}.pdf`, url: f.file_url });
+        else if (f.type === 'webpage' && f.url) {
+          const t = esc(f.title || f.url), u = esc(f.url);
+          out.push({ path: `${root}/${week}/${stem}.html`,
+                     text: `<!doctype html><meta charset="utf-8"><title>${t}</title>` +
+                           `<meta http-equiv="refresh" content="0; url=${u}"><p><a href="${u}">${t}</a></p>\n` });
+        } else n--;
+      }
+    }
+  }
+  return out;
+}
+
+/* 最小的 zip 写入器：只存不压（PDF 本来就压过），文件名按 UTF-8 标记，单个文件 < 4GB */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function makeZip(files) {
+  const enc = new TextEncoder();
+  const now = new Date();
+  const time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const parts = [], central = [];
+  let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.path), data = f.data, crc = crc32(data);
+    const head = (sig, extra) => {
+      const b = new DataView(new ArrayBuffer(extra ? 46 : 30));
+      let o = 0;
+      const u16 = (v) => { b.setUint16(o, v, true); o += 2; };
+      const u32 = (v) => { b.setUint32(o, v, true); o += 4; };
+      u32(sig);
+      // version made by：高字节 3 = Unix。写 0（MS-DOS）的话，老版 unzip 会无视 UTF-8 标记，
+      // 按 DOS 代码页读文件名，中文目录名（"未分类"）就解不出来
+      if (extra) u16((3 << 8) | 20);
+      u16(20); u16(0x0800); u16(0);         // version needed, UTF-8 名字, 不压缩
+      u16(time); u16(date); u32(crc); u32(data.length); u32(data.length);
+      u16(name.length); u16(0);
+      if (extra) { u16(0); u16(0); u16(0); u32((0o100644 << 16) >>> 0); u32(offset); }  // 外部属性：普通文件 rw-r--r--
+      return new Uint8Array(b.buffer);
+    };
+    const local = head(0x04034b50, false);
+    parts.push(local, name, data);
+    central.push(head(0x02014b50, true), name);
+    offset += local.length + name.length + data.length;
+  }
+  const cdSize = central.reduce((a, b) => a + b.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+async function downloadCourseZip() {
+  const course = STATE.data.find((c) => c.id === STATE.active);
+  const btn = $('dlzip'), msg = $('dlmsg');
+  const entries = course ? courseZipEntries(course) : [];
+  const pdfs = entries.filter((e) => e.url);
+  if (!pdfs.length) {
+    msg.textContent = '这门课没有可下载的资料（没开 Lessons，或者是更新前抓的数据，重新抓一次就有）。';
+    return;
+  }
+  btn.disabled = true;
+  const enc = new TextEncoder(), failed = [];
+  let idx = 0, done = 0;
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (idx < pdfs.length) {
+      const e = pdfs[idx++];
+      try {
+        const r = await fetch(e.url);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        e.data = new Uint8Array(await r.arrayBuffer());
+      } catch (err) {
+        failed.push(`${e.path}\n  ${e.url}\n  ${err.message}`);
+      }
+      msg.textContent = `正在下载 PDF：${++done}/${pdfs.length}`;
+    }
+  }));
+  const files = entries
+    .map((e) => (e.text != null ? { path: e.path, data: enc.encode(e.text) } : e.data && { path: e.path, data: e.data }))
+    .filter(Boolean);
+  const root = entries[0].path.split('/')[0];
+  if (failed.length) {
+    files.push({ path: `${root}/下载失败的文件.txt`,
+                 data: enc.encode('这些文件没能下载，可以在 Ed 里手动打开：\n\n' + failed.join('\n\n') + '\n') });
+  }
+  saveBlob(makeZip(files), `${root} 课程资料.zip`);
+  msg.textContent = failed.length
+    ? `已打包 ${pdfs.length - failed.length} 个 PDF，${failed.length} 个下载失败（清单在 zip 里）`
+    : `已打包 ${pdfs.length} 个 PDF 和 ${entries.length - pdfs.length} 个链接`;
+  btn.disabled = false;
+}
+
 /* ------------------------------------------------------------ IndexedDB */
 
 function idb() {
@@ -404,7 +553,11 @@ function renderTabs() {
     `<button data-cid="${c.id}" class="${c.id === STATE.active ? 'on' : ''}">${
       esc((c.code || '').split(' ')[0])} <span class="meta">${c.threads.length}</span></button>`).join('');
   for (const b of $('tabs').children) {
-    b.onclick = () => { STATE.active = Number(b.dataset.cid); renderTabs(); renderContent(); };
+    b.onclick = () => {
+      STATE.active = Number(b.dataset.cid);
+      $('dlmsg').textContent = '';
+      renderTabs(); renderContent();
+    };
   }
 }
 
@@ -414,6 +567,7 @@ function switchView(v) {
   $('filters-threads').classList.toggle('hide', v !== 'threads');
   $('filters-lessons').classList.toggle('hide', v !== 'lessons');
   $('q').value = '';
+  $('dlmsg').textContent = '';
   renderContent();
 }
 
@@ -572,6 +726,7 @@ $('back').onclick = () => show('p-auth');
 // 从本地记录/导入文件恢复的页面还没连过 Ed，选课列表是空的，得先回第一步（token 可能还在框里）
 $('restart').onclick = () => show(STATE.courses.length ? 'p-pick' : 'p-auth');
 $('export').onclick = exportJSON;
+$('dlzip').onclick = downloadCourseZip;
 $('selall').onclick = () =>
   document.querySelectorAll('#courses input').forEach((i) => { i.checked = true; });
 $('selactive').onclick = () =>
