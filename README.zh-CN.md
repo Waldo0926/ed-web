@@ -1,4 +1,9 @@
-# Ed Web — 隐私优先的纯前端 Ed Discussion 阅读器
+# Ed Web：隐私优先的纯前端 Ed Discussion 阅读器
+
+[![在线使用](https://img.shields.io/badge/在线使用-app-1e5eff?style=for-the-badge)](https://monashed.secureview.tech/app/)
+[![隐私](https://img.shields.io/badge/隐私-只在浏览器端-2ea44f?style=for-the-badge)](#隐私模型)
+[![后端](https://img.shields.io/badge/后端-无-black?style=for-the-badge)](#公开展示版与私有-companion)
+[![检查](https://img.shields.io/github/actions/workflow/status/Waldo0926/ed-web/check.yml?branch=main&style=for-the-badge&label=检查)](https://github.com/Waldo0926/ed-web/actions/workflows/check.yml)
 
 [English](README.md) · **中文**
 
@@ -22,7 +27,8 @@
 2. 按页面提示填写你的 Ed token（页面里提供了两种获取方式）
 3. 勾选需要抓取的课程，然后点击「开始抓取」
 4. 抓取完成后，可以搜索、按分类浏览，并查看每篇帖子的简短结论
-5. 在「课程内容」里点「一键下载资料」，会把这门课的 PDF 和链接打成一个 zip：解压后按周分文件夹，文件名就是页面上的标题。全程在浏览器里完成
+5. 打开「课程内容」标签页，可以按模块看每门课的 lesson、完成状态（已完成、进行中、未开始）以及每节的 PDF 和网页附件；上面的按钮可以只看未开始、临近截止、已截止或「有资料」的 lesson
+6. 点「一键下载资料」，会把这门课的 PDF 和链接打成一个 zip：解压后按周分文件夹，文件名就是页面上的标题。全程在浏览器里完成
 
 ## 总结是怎么做的
 
