@@ -1,12 +1,13 @@
-# Ed Web — Private, Client-Side Ed Discussion Reader
+# Ed Web: Private, Client-Side Ed Discussion Reader
 
 [![Live App](https://img.shields.io/badge/live-app-1e5eff?style=for-the-badge)](https://monashed.secureview.tech/app/)
 [![Privacy](https://img.shields.io/badge/privacy-client--side%20only-2ea44f?style=for-the-badge)](#privacy-model)
 [![Backend](https://img.shields.io/badge/backend-none-black?style=for-the-badge)](#public-showcase-vs-private-companion)
+[![Check](https://img.shields.io/github/actions/workflow/status/Waldo0926/ed-web/check.yml?branch=main&style=for-the-badge&label=check)](https://github.com/Waldo0926/ed-web/actions/workflows/check.yml)
 
 **English** · [中文](README.zh-CN.md)
 
-A privacy-first, client-side web app for fetching, organising, searching, and summarising Ed Discussion course forums directly in your browser.
+A privacy-first, client-side web app for fetching, organising, searching, and summarising Ed Discussion course forums directly in your browser. The interface is in Chinese; the labels below are quoted as they appear on the page.
 
 Live: https://monashed.secureview.tech/app/
 
@@ -18,21 +19,22 @@ This page is **fully static**, with no application backend. Specifically:
 - Fetched posts are stored in your browser's **IndexedDB** and are not uploaded to this site.
 - The page calls `edstem.org/api/*` directly from your browser. Ed's API returns `Access-Control-Allow-Origin: *`, so no proxy is required.
 
-This repository is public specifically so you can verify the data flow yourself — a full-text search for `fetch(` shows only Ed's API, Ed's course files (`static.edusercontent.com`, fetched without the token when you download materials) and relative application paths as destinations.
+This repository is public specifically so you can verify the data flow yourself: a full-text search for `fetch(` shows only Ed's API, Ed's course files (`static.edusercontent.com`, fetched without the token when you download materials) and relative application paths as destinations.
 
 ## How to use it
 
 1. Open https://monashed.secureview.tech/app/
 2. Enter your Ed token as the page prompts (two methods, both documented on the page)
-3. Select the units you want to fetch, then click "Start fetching"
+3. Select the units you want to fetch, then click 开始抓取 (Start fetching)
 4. Once fetched, search, browse by category, and read a one-line takeaway for each post
-5. Under Lessons, click 一键下载资料 to get one zip of the unit's PDFs and links, organised into week folders and named after the titles on the page. It is built entirely in your browser
+5. Open the 课程内容 (Lessons) tab to see each unit's lessons by module with their status (completed, in progress, not started) and the PDF and web attachments on each one. The filter buttons narrow the list to lessons not started, due soon, overdue, or with materials (有资料)
+6. Click 一键下载资料 (download all materials) to get one zip of the unit's PDFs and links, organised into week folders and named after the titles on the page. It is built entirely in your browser
 
 ## How the summaries are made
 
 No LLM, pure rule-based logic:
 
-- Posts with a staff reply → take the first sentence or two of the first staff reply, prefixed "Staff answered"
+- Posts with a staff reply → take the first sentence or two of the first staff reply, prefixed 老师答 ("staff answered")
 - Otherwise → take the first sentence of the post body
 - Keyword tagging: deadline/extension changes, time/location changes, grade releases, exam scheduling
 - Unanswered questions and posts from the last 48 hours are highlighted separately
