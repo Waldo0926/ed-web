@@ -18,6 +18,9 @@ Browser
 Ed Discussion API
   |
   v
+incremental sync (only changed threads)
+  |
+  v
 normalise / organise posts
   |
   +--> IndexedDB
@@ -33,7 +36,8 @@ static UI
 Key properties:
 
 - no application backend;
-- token lives only in browser session storage;
+- token lives only in browser session storage (a browser JWT or an Ed API token);
+- refreshes re-fetch only threads whose fingerprint changed, the rest is reused from IndexedDB;
 - forum content remains in browser-local IndexedDB;
 - direct API calls make the data flow easy to audit;
 - rule-based summaries avoid sending course content to another service.
@@ -125,6 +129,7 @@ The combined public/private design demonstrates several different concerns:
 | Persistence | IndexedDB | SQLite |
 | Token location | browser session only | protected local runtime configuration |
 | Summaries | deterministic rules | rules + manual AI curation |
+| Refresh | incremental, on demand | incremental, hourly timer |
 | Hosting | static public app | access-controlled private dashboard |
 | Course data in repository | none | none |
 
