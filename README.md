@@ -4,12 +4,17 @@
 [![Privacy](https://img.shields.io/badge/privacy-client--side%20only-2ea44f?style=for-the-badge)](#privacy-model)
 [![Backend](https://img.shields.io/badge/backend-none-black?style=for-the-badge)](#public-showcase-vs-private-companion)
 [![Check](https://img.shields.io/github/actions/workflow/status/Waldo0926/ed-web/check.yml?branch=main&style=for-the-badge&label=check)](https://github.com/Waldo0926/ed-web/actions/workflows/check.yml)
+[![Docs](https://img.shields.io/badge/docs-docs.secureview.tech-1e5eff?style=for-the-badge)](https://docs.secureview.tech/ed-web/)
 
 **English** · [中文](README.zh-CN.md)
 
 A privacy-first, client-side web app for fetching, organising, searching, and summarising Ed Discussion course forums directly in your browser. The interface is in Chinese; the labels below are quoted as they appear on the page.
 
 Live: https://monashed.secureview.tech/app/
+
+![Posts of one unit grouped by category, each with a one-line takeaway; staff answers are marked](docs/screenshots/threads-zh.png)
+
+The screenshots on this page were taken against a fake Ed API with made-up units, people and posts. Guide with more pictures: [docs.secureview.tech/ed-web](https://docs.secureview.tech/ed-web/).
 
 ## Privacy model
 
@@ -28,6 +33,8 @@ This repository is public specifically so you can verify the data flow yourself:
 3. Select the units you want to fetch, then click 开始抓取 (Start fetching)
 4. Once fetched, search, browse by category, and read a one-line takeaway for each post
 5. Open the 课程内容 (Lessons) tab to see each unit's lessons by module with their status (completed, in progress, not started) and the PDF and web attachments on each one. The filter buttons narrow the list to lessons not started, due soon, overdue, or with materials (有资料)
+![Lessons tab: each week's lessons with their status, due dates and attached slides](docs/screenshots/lessons-zh.png)
+
 6. Click 一键下载资料 (download all materials) to get one zip of the unit's PDFs and links, organised into week folders and named after the titles on the page. It is built entirely in your browser
 
 ## How the summaries are made
