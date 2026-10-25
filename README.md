@@ -4,12 +4,17 @@
 [![Privacy](https://img.shields.io/badge/privacy-client--side%20only-2ea44f?style=for-the-badge)](#privacy-model)
 [![Backend](https://img.shields.io/badge/backend-none-black?style=for-the-badge)](#public-showcase-vs-private-companion)
 [![Check](https://img.shields.io/github/actions/workflow/status/Waldo0926/ed-web/check.yml?branch=main&style=for-the-badge&label=check)](https://github.com/Waldo0926/ed-web/actions/workflows/check.yml)
+[![Docs](https://img.shields.io/badge/docs-docs.secureview.tech-1e5eff?style=for-the-badge)](https://docs.secureview.tech/ed-web/)
 
 **English** · [中文](README.zh-CN.md)
 
 A privacy-first, client-side web app for fetching, organising, searching, and summarising Ed Discussion course forums directly in your browser. The interface is in Chinese; the labels below are quoted as they appear on the page.
 
 Live: https://monashed.secureview.tech/app/
+
+![Posts of one unit grouped by category, each with a one-line takeaway; staff answers are marked](docs/screenshots/threads-zh.png)
+
+The screenshots on this page were taken against a fake Ed API with made-up units, people and posts. Guide with more pictures: [docs.secureview.tech/ed-web](https://docs.secureview.tech/ed-web/).
 
 ## Privacy model
 
@@ -31,6 +36,8 @@ This repository is public specifically so you can verify the data flow yourself:
 4. Browse by category, search (every word has to appear, replies included), and read a one-line takeaway for each post. Post bodies keep their formatting: links, bold, code blocks, images and attachments. Filters: 新内容 (new), 待解答 (unanswered), 有提醒 (deadline / room change / marks), 老师已答 (staff answered), 公告 (announcements), 有未读回复 (Ed's unread count), 我发的 (mine), 收藏 (starred)
 5. Click ↻ 刷新 (refresh) whenever you like. It re-reads the thread list and only fetches posts whose fingerprint (updated time, reply count, answered state) changed, so a typical refresh is a few dozen requests. Posts and replies that appeared since the last refresh are marked 新 (new) or +N 新回复
 6. Open the 课程内容 (Lessons) tab to see each unit's lessons by module with their status, the PDF and web attachments on each one, the text of Ed's own reading pages, and quiz questions (Ed does not release answers to students). The filter buttons narrow the list to lessons not started, in progress, due soon, overdue, or with materials (有资料)
+![Lessons tab: each week's lessons with their status, due dates, attachments, reading text and quiz questions](docs/screenshots/lessons-zh.png)
+
 7. Click 一键下载资料 (download all materials) to get one zip of the unit's PDFs and links, organised into week folders and named after the titles on the page. It is built entirely in your browser
 8. 导出 JSON saves everything to a file; 载入之前导出的 JSON on the first screen brings it back on another machine
 
