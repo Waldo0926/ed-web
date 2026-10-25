@@ -4,49 +4,80 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light dark">
 <title>Ed 课程论坛整理</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<div class="wrap">
+<body data-step="p-auth">
 
-  <h1>Ed 课程论坛整理</h1>
-  <div class="sub">
-    把你的 Ed 帖子和课程内容抓下来、按分类整理、每条给一句话结论。
-    全程在你自己的浏览器里跑 —— token 和数据都不会离开这台机器。
+<header class="top">
+  <a class="brand" href="./">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="2" y="2" width="22" height="22" rx="7" fill="var(--accent)"/><path d="M8 9h10M8 13h10M8 17h6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+    <span>Ed 整理</span>
+  </a>
+  <nav id="tabs" class="tabs" aria-label="课程"></nav>
+  <div class="topright">
+    <span id="status" class="status"></span>
+    <button id="theme" class="icon" title="切换深浅色" aria-label="切换深浅色">◐</button>
   </div>
+</header>
+
+<main class="wrap">
 
   <!-- ===== 第一步：token ===== -->
-  <section class="panel" id="p-auth">
-    <h2>第一步：让页面能读你的 Ed</h2>
-    <p class="note">
-      Ed 没有对第三方开放的登录授权，所以需要你把自己的登录凭据（token）交给
-      <b>这个页面</b>。它只存在你浏览器的 sessionStorage 里，关掉标签页就没了，
-      不会发给任何服务器 —— 这个页面的源码是公开的，可以自己核对。
-    </p>
-
-    <ol class="steps">
-      <li>在浏览器里打开任意一个 Ed 页面（<a href="https://edstem.org/au/dashboard" target="_blank" rel="noopener">edstem.org</a>），确认是登录状态</li>
-      <li>按 <code>⌥⌘J</code>（Mac）或 <code>Ctrl+Shift+J</code>（Windows）打开控制台</li>
-      <li>粘贴下面这行并回车。Chrome 第一次会拦你，按它的提示先手打 <code>allow pasting</code> 再粘贴：
-        <pre class="snip" id="snippet">copy(localStorage.authToken)</pre>
-      </li>
-      <li>token 已经在你剪贴板里了，粘到下面这个框：</li>
-    </ol>
-
-    <label for="tok">Ed token（一长串 eyJ… 开头的字符）</label>
-    <textarea id="tok" spellcheck="false" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"></textarea>
-
-    <div class="row">
-      <button class="primary" id="go">连接</button>
-      <button id="loadfile">载入之前导出的 JSON</button>
-      <input type="file" id="file" accept="application/json" style="display:none">
+  <section id="p-auth">
+    <div class="hero">
+      <h1>把 Ed 论坛和课程内容抓下来，按分类整理，每条给一句话结论。</h1>
+      <p class="lead">全程在你自己的浏览器里跑。token 只存在这个标签页里，帖子存在这台电脑的浏览器里，
+        都不会发给任何服务器。<a href="https://github.com/Waldo0926/ed-web" target="_blank" rel="noopener">源码公开</a>，可以自己核对。</p>
+      <ul class="trust">
+        <li><b>没有后端</b><span>页面只请求 edstem.org</span></li>
+        <li><b>关掉标签页即清除</b><span>token 不落盘</span></li>
+        <li><b>增量刷新</b><span>只抓有变化的帖子</span></li>
+      </ul>
     </div>
-    <div class="note warn">
-      这张 token 等价于你的 Ed 账号完整权限（能替你发帖、删帖、看私密帖），
-      有效期约 14 天。别把它发给别人，也别贴到你不信任的网站上。
+
+    <div class="panel">
+      <h2>第一步：让页面能读你的 Ed</h2>
+      <p class="note">Ed 没有对第三方开放的登录授权，所以要把你自己的凭据（token）交给<b>这个页面</b>。两种拿法，任选一种：</p>
+
+      <div class="methods">
+        <section class="method">
+          <h3><span class="tag">方式一</span>浏览器 token</h3>
+          <p class="note">用你现在的登录状态，约 14 天后过期。</p>
+          <ol class="steps">
+            <li>打开任意一个 Ed 页面（<a href="https://edstem.org/au/dashboard" target="_blank" rel="noopener">edstem.org</a>），确认已登录</li>
+            <li>按 <code>⌥⌘J</code>（Mac）或 <code>Ctrl+Shift+J</code>（Windows）打开控制台</li>
+            <li>粘贴这行并回车。Chrome 第一次会拦你，按提示先手打 <code>allow pasting</code> 再粘贴：
+              <pre class="snip">copy(localStorage.authToken)</pre></li>
+            <li>token 已经在剪贴板里了，粘到下面的框</li>
+          </ol>
+        </section>
+        <section class="method">
+          <h3><span class="tag">方式二</span>API 令牌</h3>
+          <p class="note">在 Ed 的设置页生成，不过期，不用开控制台。能不能在浏览器里用取决于 Ed 的跨域设置，不行页面会提示。</p>
+          <ol class="steps">
+            <li>打开 <a href="https://edstem.org/au/settings/api-tokens" target="_blank" rel="noopener">edstem.org/au/settings/api-tokens</a></li>
+            <li>点 Create token，起个名字，复制生成的令牌</li>
+            <li>粘到下面的框。以后不想用了，在同一页删掉就立刻失效</li>
+          </ol>
+        </section>
+      </div>
+
+      <label for="tok">Ed token 或 API 令牌</label>
+      <textarea id="tok" spellcheck="false" autocomplete="off" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"></textarea>
+      <div class="note" id="tokhint"></div>
+
+      <div class="row">
+        <button class="primary" id="go">连接</button>
+        <button id="loadfile">载入之前导出的 JSON</button>
+        <input type="file" id="file" accept="application/json" style="display:none">
+      </div>
+      <div class="note warn">
+        这个 token 等价于你的 Ed 账号完整权限（能替你发帖、删帖、看私密帖）。别把它发给别人，也别贴到你不信任的网站上。
+      </div>
+      <div class="err" id="autherr"></div>
     </div>
-    <div class="err" id="autherr"></div>
   </section>
 
   <!-- ===== 第二步：选课 ===== -->
@@ -60,49 +91,66 @@
       <button id="selactive">只选在读的</button>
       <button id="back">换个 token</button>
     </div>
-    <progress id="prog" class="hidden" max="100" value="0"></progress>
-    <div class="note" id="progtext"></div>
+    <div id="progbox" class="hide">
+      <progress id="prog" class="hidden" max="100" value="0"></progress>
+      <div class="note" id="progtext"></div>
+    </div>
     <div class="err" id="crawlerr"></div>
   </section>
 
   <!-- ===== 第三步：看 ===== -->
-  <section class="hide" id="p-view">
-    <div class="tabs" id="tabs"></div>
+  <section class="hide view" id="p-view">
+    <aside class="side">
+      <div id="crumb" class="crumb"></div>
+      <div class="seg" id="viewseg" role="tablist">
+        <button data-v="threads" class="on">帖子</button>
+        <button data-v="lessons">课程内容</button>
+      </div>
+      <div id="stats" class="stats"></div>
+      <div class="actions">
+        <button class="btn" id="refresh" title="只抓有变化的帖子">↻ 刷新</button>
+        <button class="btn" id="export" title="把抓到的数据存成 JSON，以后可以载入">导出 JSON</button>
+        <button class="btn" id="restart" title="重新选课或全部重抓">换课程 / 重抓</button>
+      </div>
+    </aside>
 
-    <div class="seg" id="viewseg">
-      <button data-v="threads" class="on">帖子</button>
-      <button data-v="lessons">课程内容</button>
+    <div class="main">
+      <div class="bar">
+        <div class="search"><input id="q" placeholder="搜标题、正文、回复，多个词都要出现"><span id="count" class="count"></span></div>
+        <div class="chips">
+          <span id="filters-threads">
+            <button class="chipbtn" data-f="new">新内容</button>
+            <button class="chipbtn" data-f="unanswered">待解答</button>
+            <button class="chipbtn" data-f="alert">有提醒</button>
+            <button class="chipbtn" data-f="staff">老师已答</button>
+            <button class="chipbtn" data-f="announcement">公告</button>
+            <button class="chipbtn" data-f="unread">有未读回复</button>
+            <button class="chipbtn" data-f="mine">我发的</button>
+            <button class="chipbtn" data-f="starred">收藏</button>
+          </span>
+          <span id="filters-lessons" class="hide">
+            <button class="chipbtn" data-lf="unattempted">未开始</button>
+            <button class="chipbtn" data-lf="attempted">进行中</button>
+            <button class="chipbtn" data-lf="duesoon">临近截止</button>
+            <button class="chipbtn" data-lf="overdue">已截止</button>
+            <button class="chipbtn" data-lf="hasfiles">有资料</button>
+            <button class="chipbtn act" id="dlzip" title="把这门课的 PDF 和链接按周分文件夹打成一个 zip">⬇ 一键下载资料</button>
+          </span>
+          <button class="chipbtn act" id="expand">展开全部</button>
+        </div>
+      </div>
+      <div class="notice hide" id="dlmsg"></div>
+      <div id="list"></div>
     </div>
-
-    <div class="bar">
-      <input id="q" placeholder="搜索…">
-      <span id="filters-threads">
-        <button class="btn" data-f="new">近 48 小时</button>
-        <button class="btn" data-f="unanswered">未解答</button>
-        <button class="btn" data-f="alert">有提醒</button>
-        <button class="btn" data-f="staff">老师已答</button>
-        <button class="btn" id="expand">展开全部</button>
-      </span>
-      <span id="filters-lessons" class="hide">
-        <button class="btn" data-lf="unattempted">未开始</button>
-        <button class="btn" data-lf="duesoon">临近截止</button>
-        <button class="btn" data-lf="overdue">已截止</button>
-        <button class="btn" data-lf="hasfiles">有资料</button>
-        <button class="btn" id="dlzip" title="把这门课的 PDF 和链接按周分文件夹打成一个 zip">一键下载资料</button>
-      </span>
-      <button class="btn" id="export">导出 JSON</button>
-      <button class="btn" id="restart">重新抓</button>
-    </div>
-    <div class="note" id="dlmsg"></div>
-    <div id="list"></div>
   </section>
 
-  <footer>
-    源码：<a href="https://github.com/Waldo0926/ed-web" target="_blank" rel="noopener">github.com/Waldo0926/ed-web</a>
-    · 这是一个个人小工具，跟 Ed 和 Monash 都没有关系。
-    抓下来的内容里有同学的真实姓名，请不要外传。
-  </footer>
-</div>
+</main>
+
+<footer>
+  源码：<a href="https://github.com/Waldo0926/ed-web" target="_blank" rel="noopener">github.com/Waldo0926/ed-web</a>
+  · 这是一个个人小工具，跟 Ed 和 Monash 都没有关系。
+  抓下来的内容里有同学的真实姓名，请不要外传。
+</footer>
 <script src="app.js"></script>
 </body>
 </html>

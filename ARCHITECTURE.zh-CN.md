@@ -18,6 +18,9 @@
 Ed Discussion API
   |
   v
+增量同步（只重抓变了的帖子）
+  |
+  v
 标准化 / 整理帖子
   |
   +--> IndexedDB
@@ -33,7 +36,8 @@ Ed Discussion API
 核心特点：
 
 - 没有应用后端；
-- token 只存在浏览器当前 session 中；
+- token 只存在浏览器当前 session 中（浏览器 JWT 或 Ed 的 API 令牌都行）；
+- 刷新只重抓指纹变了的帖子，其余直接沿用 IndexedDB 里的；
 - 论坛内容只保存在浏览器本地 IndexedDB；
 - API 由浏览器直接调用，数据流容易核对；
 - 使用规则式摘要，不需要把课程内容发送给其他服务。
@@ -125,6 +129,7 @@ SQLite 持久化
 | 持久化 | IndexedDB | SQLite |
 | Token 所在位置 | 仅浏览器 session | 受保护的本地运行时配置 |
 | 摘要 | 确定性规则 | 规则 + 手动 AI 整理 |
+| 刷新 | 增量，手动点 | 增量，每小时定时 |
 | 托管 | 公开静态应用 | 受访问控制的私人 dashboard |
 | 仓库中的课程数据 | 无 | 无 |
 
